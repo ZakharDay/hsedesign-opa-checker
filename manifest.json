@@ -19,7 +19,7 @@
   "content_scripts": [
     {
       "matches": ["https://hsedesign.ru/context/hse/opa*"],
-      "js": ["crawler.js"],
+      "js": ["page_ui.js"],
       "run_at": "document_end"
     }
   ],
