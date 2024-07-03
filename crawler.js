@@ -71,9 +71,9 @@ function renderData() {
     const employeeElement = document.createElement('div');
     employeeElement.classList.add('employeeElement');
 
-    const nameElement = document.createElement('h2');
+    const nameElement = document.createElement('div');
     nameElement.classList.add('nameElement');
-    employeeElement.innerText = employee.name;
+    nameElement.innerText = employee.name;
 
     const projectsElement = document.createElement('div');
     projectsElement.classList.add('projectsElement');
@@ -122,6 +122,11 @@ addStyle(`
     padding: 10px;
     border-radius: 5px;
     background-color: white;
+  }
+  
+  .nameElement {
+    margin-bottom: 6px;
+    font-weight: bold;
   }
 `);
 
