@@ -55,21 +55,11 @@ function prepareUI() {
   return new Promise((resolve, reject) => {
     table = document.body.querySelector('table');
     const tableRows = table.getElementsByTagName('tr');
+    const promises = [];
 
     for (let index = 0; index < tableRows.length; index++) {
       const tableRow = tableRows[index];
-      const tableRowCells = tableRow.getElementsByTagName('td');
-
-      for (let index = 0; index < tableRowCells.length; index++) {
-        const tableRowCell = tableRowCells[index];
-
-        if (index == 0) {
-          const employeeName = tableRowCell.querySelector('a').innerText;
-          tableRowCell.style.position = 'relative';
-          tableRowCell.style.paddingLeft = '46px';
-          renderToggleEmployeeButton(tableRowCell, employeeName);
-        }
-      }
+      promises.push(prepareTableRow(tableRow));
     }
 
     const root = document.createElement('div');
@@ -77,6 +67,24 @@ function prepareUI() {
     document.body.appendChild(root);
 
     updatePanelVisibility();
+
+    Promise.all(promises).then(() => {
+      resolve();
+    });
+  });
+}
+
+function prepareTableRow(tableRow) {
+  return new Promise((resolve, reject) => {
+    const tableRowCells = tableRow.getElementsByTagName('td');
+
+    if (tableRowCells.length > 0) {
+      const tableRowCell = tableRowCells[0];
+      const employeeName = tableRowCell.querySelector('a').innerText;
+      tableRowCell.style.position = 'relative';
+      tableRowCell.style.paddingLeft = '46px';
+      renderToggleEmployeeButton(tableRowCell, employeeName);
+    }
 
     resolve();
   });
@@ -88,37 +96,46 @@ function renderToggleEmployeeButton(container, name) {
   container.prepend(button);
 
   if (employeeNames.includes(name)) {
-    setEmployeeRowAndButtonStyle(button, 'active');
+    setEmployeeRowAndButtonStyle(name, 'active');
   } else {
-    setEmployeeRowAndButtonStyle(button, 'inactive');
+    setEmployeeRowAndButtonStyle(name, 'inactive');
   }
 
   button.addEventListener('click', () => {
     if (employeeNames.includes(name)) {
-      removeChromeStorageEmployeeNameData(name);
-      setEmployeeRowAndButtonStyle(button, 'inactive');
-      updatePanelVisibility();
+      removeEmployee(name);
     } else {
-      setChromeStorageEmployeeNameData(name);
-      setEmployeeRowAndButtonStyle(button, 'active');
-      updatePanelVisibility();
+      addEmployee(name);
     }
-
-    getData().then(() => {
-      renderData();
-    });
   });
 }
 
-function setEmployeeRowAndButtonStyle(button, active) {
-  const row = button.parentElement.parentElement;
+function setEmployeeRowAndButtonStyle(name, active) {
+  table = document.body.querySelector('table');
+  const tableRows = table.getElementsByTagName('tr');
 
-  if (active == 'active') {
-    button.innerText = '-';
-    row.classList.add('activeEmployeeRow');
-  } else {
-    button.innerText = '+';
-    row.classList.remove('activeEmployeeRow');
+  for (let index = 0; index < tableRows.length; index++) {
+    const tableRow = tableRows[index];
+    const tableRowCells = tableRow.getElementsByTagName('td');
+
+    if (tableRowCells.length > 0) {
+      const tableRowCell = tableRowCells[0];
+      const a = tableRowCell.querySelector('a');
+
+      if (a.innerText == name) {
+        const button = tableRowCell.querySelector('.employeeButton');
+
+        if (button) {
+          if (active == 'active') {
+            button.innerText = '-';
+            tableRow.classList.add('activeEmployeeRow');
+          } else {
+            button.innerText = '+';
+            tableRow.classList.remove('activeEmployeeRow');
+          }
+        }
+      }
+    }
   }
 }
 
@@ -130,6 +147,26 @@ function updatePanelVisibility() {
   } else {
     root.classList.remove('empty');
   }
+}
+
+function addEmployee(name) {
+  setChromeStorageEmployeeNameData(name);
+  setEmployeeRowAndButtonStyle(name, 'active');
+  updatePanelVisibility();
+
+  getData().then(() => {
+    renderData();
+  });
+}
+
+function removeEmployee(name) {
+  removeChromeStorageEmployeeNameData(name);
+  setEmployeeRowAndButtonStyle(name, 'inactive');
+  updatePanelVisibility();
+
+  getData().then(() => {
+    renderData();
+  });
 }
 
 function getData() {
@@ -199,15 +236,28 @@ function renderData() {
       opaElement.style.color = 'red';
     }
 
+    const removeButton = document.createElement('div');
+    removeButton.classList.add('removeButton');
+    removeButton.innerText = '✖️';
+
     employeeElement.appendChild(nameElement);
     employeeElement.appendChild(projectsElement);
     employeeElement.appendChild(opaElement);
+    employeeElement.appendChild(removeButton);
+
+    removeButton.addEventListener('click', () => {
+      removeEmployee(employee.name);
+    });
 
     root.appendChild(employeeElement);
   });
 }
 
 addStyle(`
+  #root {
+    padding-bottom: 30vh !important;
+  }
+
   thead {
     z-index: 99999 !important;
   }
@@ -252,6 +302,7 @@ addStyle(`
   }
 
   .employeeElement {
+    position: relative;
     width: 220px;
     border: 1px solid lightgrey;
     padding: 10px;
@@ -264,9 +315,14 @@ addStyle(`
   }
 
   .employeeElement .removeButton {
+    position: absolute;
+    top: 10px;
+    right: 6px;
     display: none;
     width: 30px;
     height: 30px;
+    text-align: center;
+    cursor: pointer;
   }
   
   .nameElement {
@@ -285,4 +341,4 @@ setTimeout(() => {
       }
     });
   });
-}, 3000);
+}, 5000);
